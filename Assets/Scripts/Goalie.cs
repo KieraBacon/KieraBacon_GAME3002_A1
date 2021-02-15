@@ -2,6 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Script for the soccer goalie.
+/// Given two locations, the goalie will continually move back and forth between them.
+/// </summary>
 public class Goalie : MonoBehaviour
 {
     [SerializeField] public Vector3 m_rightPos;

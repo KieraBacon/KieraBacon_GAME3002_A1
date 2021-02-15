@@ -1,75 +1,69 @@
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Assertions;
 using UnityEngine;
 
+
+
+
+
+
+
+
+
+
+
 /// <summary>
-/// Code taken from Patryk Galach at
-/// https://www.patrykgalach.com/2020/03/23/drawing-ballistic-trajectory-in-unity/
+/// Code taken from Patryk Galach at https://www.patrykgalach.com/2020/03/23/drawing-ballistic-trajectory-in-unity/.
 /// </summary>
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 [RequireComponent(typeof(LineRenderer))]
-public class BallisticTrajectoryRenderer : MonoBehaviour
+public class TrajectoryRenderer : MonoBehaviour
 {
-    // Reference to the line renderer
-    private LineRenderer line;
-
-    // Initial trajectory position
-    [SerializeField]
-    private Vector3 startPosition;
-
-    // Initial trajectory velocity
-    [SerializeField]
-    private Vector3 startVelocity;
-
-    // Step distance for the trajectory
-    [SerializeField]
-    private float trajectoryVertDist = 0.25f;
-
-    // Max length of the trajectory
-    [SerializeField]
-    private float maxCurveLength = 10;
-
-    [Header("Debug")]
-    // Flag for always drawing trajectory
-    [SerializeField]
-    private bool _debugAlwaysDrawTrajectory = false;
-
-    /// <summary>
-    /// Method called on initialization.
-    /// </summary>
+    private LineRenderer line; // Reference to the line renderer
+    [SerializeField] private Vector3 startPosition; // Initial trajectory position
+    [SerializeField] private Vector3 startVelocity; // Initial trajectory velocity
+    [SerializeField] private float trajectoryVertDist = 0.25f; // Step distance for the trajectory
+    [SerializeField] private float maxCurveLength = 10; // Max length of the trajectory
+    private bool m_bShouldDraw = false;
     private void Awake()
     {
-        // Get line renderer reference
-        line = GetComponent<LineRenderer>();
+        line = GetComponent<LineRenderer>(); // Get line renderer reference
+        Assert.IsNotNull(line, "Error! The TrajectoryRenderer has no LineRenderer to render!");
     }
-    /// <summary>
-    /// Method called on every frame.
-    /// </summary>
     private void Update()
     {
-        // Draw trajectory while pressing button
-        if (Input.GetButton("Fire1") || _debugAlwaysDrawTrajectory)
+        if (m_bShouldDraw)
         {
-            // Draw trajectory
             DrawTrajectory();
         }
-        // Clear trajectory after releasing button
-        if (Input.GetButtonUp("Fire1") && !_debugAlwaysDrawTrajectory)
+        else
         {
-            // Clear trajectory
             ClearTrajectory();
         }
     }
-    /// <summary>
-    /// Sets ballistic values for trajectory.
-    /// </summary>
-    /// <param name="startPosition">Start position.</param>
-    /// <param name="startVelocity">Start velocity.</param>
-    public void SetBallisticValues(Vector3 startPosition, Vector3 startVelocity)
+    public void SetInitialPositionAndVelocity(Vector3 position, Vector3 velocity)
     {
-        this.startPosition = startPosition;
-        this.startVelocity = startVelocity;
+        startPosition = position;
+        startVelocity = velocity;
     }
-
     /// <summary>
     /// Draws the trajectory with line renderer.
     /// </summary>
@@ -78,12 +72,15 @@ public class BallisticTrajectoryRenderer : MonoBehaviour
         // Create a list of trajectory points
         var curvePoints = new List<Vector3>();
         curvePoints.Add(startPosition);
+
         // Initial values for trajectory
         var currentPosition = startPosition;
         var currentVelocity = startVelocity;
+
         // Init physics variables
         RaycastHit hit;
         Ray ray = new Ray(currentPosition, currentVelocity.normalized);
+
         // Loop until hit something or distance is too great
         while (!Physics.Raycast(ray, out hit, trajectoryVertDist) && Vector3.Distance(startPosition, currentPosition) < maxCurveLength)
         {
@@ -97,6 +94,7 @@ public class BallisticTrajectoryRenderer : MonoBehaviour
             // Create new ray
             ray = new Ray(currentPosition, currentVelocity.normalized);
         }
+
         // If something was hit, add last point there
         if (hit.transform)
         {
@@ -114,4 +112,10 @@ public class BallisticTrajectoryRenderer : MonoBehaviour
         // Hide line
         line.positionCount = 0;
     }
+    #region CALLBACKS
+    public void OnSetShouldDraw(bool value)
+    {
+        m_bShouldDraw = value;
+    }
+    #endregion
 }

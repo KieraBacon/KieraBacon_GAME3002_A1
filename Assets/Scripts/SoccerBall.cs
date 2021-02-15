@@ -3,97 +3,92 @@ using System.Collections.Generic;
 using UnityEngine.Assertions;
 using UnityEngine;
 
+/// <summary>
+/// Script for the soccer ball itself.
+/// This script is responsible for launching the ball,
+/// and determining if the ball can score.
+/// </summary>
 [RequireComponent(typeof(Rigidbody))]
 public class SoccerBall : MonoBehaviour
-{
-    [SerializeField] private Material m_landingMaterial;
-    private GameObject m_landingDisplay = null;
-    private BallisticTrajectoryRenderer m_trajectory;
-    private Rigidbody m_rb = null;
+{   
+    private Rigidbody m_rb;
+    private Quaternion m_vInitialRotation; // Initial values to be reset to if a full reset is requested.
+    private Vector3 m_vInitialPosition;    // ' '
+    private Vector3 m_vKickVelocity; // Velocity to be applied when kicked.
 
-    [SerializeField] private Vector3 m_vInitialVelocity = Vector3.zero;
-    private Vector3 m_vInitialPosition;
-    private Quaternion m_vInitialRotation;
+    private bool m_bIsGrounded = true; // Ball can only be kicked when grounded.
+    private bool m_bCanScore = true; // Ball can only score once before being reset.
 
-    private bool m_bIsGrounded = true;
-    private bool m_bHasScored = false;
-
+    /// <summary>
+    /// Set the initial values for the script.
+    /// </summary>
     private void Start()
     {
         m_rb = GetComponent<Rigidbody>();
-        Assert.IsNotNull(m_rb, "Houston, we've got a problem! Rigidbody is not attached!");
-        m_trajectory = GetComponent<BallisticTrajectoryRenderer>();
+        Assert.IsNotNull(m_rb, "Error! SoccerBall has no Rigidbody!");
 
-        // Create the landing display
-        m_landingDisplay = new GameObject("Soccer Ball Landing Display");
-        m_landingDisplay.transform.position = transform.position;
-        m_landingDisplay.transform.localScale = transform.localScale;
-        m_landingDisplay.AddComponent<MeshFilter>();
-        m_landingDisplay.GetComponent<MeshFilter>().mesh = this.GetComponent<MeshFilter>().mesh;
-        m_landingDisplay.AddComponent<MeshRenderer>();
-        m_landingDisplay.GetComponent<MeshRenderer>().material = m_landingMaterial;
-
-        m_vInitialPosition = transform.position;
         m_vInitialRotation = transform.rotation;
+        m_vInitialPosition = transform.position;
+        m_vKickVelocity = Vector3.zero;
     }
 
-    private void Update()
+    /// <summary>
+    /// Return whether or not the ball is capable of scoring.
+    /// This should return false if the ball has recently scored,
+    /// and has not been reset, so that it cannot score on a rebound from the net.
+    /// </summary>
+    public bool CanScore()
     {
-        if (m_landingDisplay != null && m_bIsGrounded)
-            m_landingDisplay.transform.position = GetLandingPosition();
- 
-        if (m_trajectory != null && m_bIsGrounded)
-            m_trajectory.SetBallisticValues(transform.position, m_vInitialVelocity);
-    }
-
-    private Vector3 GetLandingPosition()
-    {
-        float fTime = 2f * (0f - m_vInitialVelocity.y / Physics.gravity.y);
-
-        Vector3 vFlatVel = m_vInitialVelocity;
-        vFlatVel.y = 0f;
-        vFlatVel *= fTime;
-
-        return transform.position + vFlatVel;
-    }
-
-    public bool HasScored()
-    {
-        return m_bHasScored;
+        return m_bCanScore;
     }
 
     #region CALLBACKS
+    /// <summary>
+    /// Resets the ball so that it can be kicked again and can score again.
+    /// </summary>
+    /// <param name="fullReset">Setting this to true will also reset the position and rotation of the ball to their initial values.</param>
     public void OnReset(bool fullReset)
     {
         m_bIsGrounded = true;
-        m_bHasScored = false;
+        m_bCanScore = true;
         if (fullReset)
         {
             transform.position = m_vInitialPosition;
             transform.rotation = m_vInitialRotation;
         }
     }
+    /// <summary>
+    /// Kicks the ball using the velocity set by OnSetKickVelocity().
+    /// </summary>
     public void OnKick()
     {
-        if (!m_bIsGrounded)
-        {
+        if (!m_bIsGrounded) // Ball cannot be kicked if it's already in the air.
             return;
-        }
 
-        m_landingDisplay.transform.position = GetLandingPosition();
+        // Determine the target position and face in that direction.
+        Vector3 targetPosition = ProjectileBehaviour.GetLandingPosition(transform.position, m_vKickVelocity);
+        transform.LookAt(targetPosition, Vector3.up);
+
+        // Note that the ball is in the air, then actually make it so.
         m_bIsGrounded = false;
-
-        transform.LookAt(m_landingDisplay.transform.position, Vector3.up);
-
-        m_rb.velocity = m_vInitialVelocity;
+        m_rb.velocity = m_vKickVelocity;
     }
+
+    /// <summary>
+    /// Flags that the ball has scored since it's last reset,
+    /// preventing it from doing so again.
+    /// </summary>
     public void OnScore()
     {
-        m_bHasScored = true;
+        m_bCanScore = false;
     }
-    public void OnSetInitialVelocity(Vector3 value)
+
+    /// <summary>
+    /// Sets the velocity that the ball will be kicked with when it is kicked.
+    /// </summary>
+    public void OnSetKickVelocity(Vector3 value)
     {
-        m_vInitialVelocity = value;
+        m_vKickVelocity = value;
     }
     #endregion
 }
