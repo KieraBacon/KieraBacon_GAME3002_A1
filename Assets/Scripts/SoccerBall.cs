@@ -16,6 +16,7 @@ public class SoccerBall : MonoBehaviour
     private Quaternion m_vInitialRotation;
 
     private bool m_bIsGrounded = true;
+    private bool m_bHasScored = false;
 
     private void Start()
     {
@@ -31,8 +32,6 @@ public class SoccerBall : MonoBehaviour
         m_landingDisplay.GetComponent<MeshFilter>().mesh = this.GetComponent<MeshFilter>().mesh;
         m_landingDisplay.AddComponent<MeshRenderer>();
         m_landingDisplay.GetComponent<MeshRenderer>().material = m_landingMaterial;
-
-
 
         m_vInitialPosition = transform.position;
         m_vInitialRotation = transform.rotation;
@@ -58,10 +57,16 @@ public class SoccerBall : MonoBehaviour
         return transform.position + vFlatVel;
     }
 
+    public bool HasScored()
+    {
+        return m_bHasScored;
+    }
+
     #region CALLBACKS
     public void OnReset(bool fullReset)
     {
         m_bIsGrounded = true;
+        m_bHasScored = false;
         if (fullReset)
         {
             transform.position = m_vInitialPosition;
@@ -82,7 +87,10 @@ public class SoccerBall : MonoBehaviour
 
         m_rb.velocity = m_vInitialVelocity;
     }
-
+    public void OnScore()
+    {
+        m_bHasScored = true;
+    }
     public void OnSetInitialVelocity(Vector3 value)
     {
         m_vInitialVelocity = value;

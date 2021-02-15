@@ -37,6 +37,7 @@ public class SoccerBallController : MonoBehaviour
     {
         m_soccerBall = GetComponent<SoccerBall>();
         Assert.IsNotNull(m_soccerBall, "Error! The Soccer Ball Controller has no Soccer Ball!");
+        m_fKickStrength = m_fMinStrength;
     }
 
     void Update()
@@ -59,10 +60,10 @@ public class SoccerBallController : MonoBehaviour
                 m_fStrengthScaling = -Mathf.Abs(m_fStrengthScaling);
                 m_fKickStrength = m_fMaxStrength + Time.deltaTime * m_fStrengthScaling;
             }
-            else if (m_fKickStrength < 0.0f)
+            else if (m_fKickStrength < m_fMinStrength)
             {
                 m_fStrengthScaling = Mathf.Abs(m_fStrengthScaling);
-                m_fKickStrength = 0.0f + Time.deltaTime * m_fStrengthScaling;
+                m_fKickStrength = m_fMinStrength + Time.deltaTime * m_fStrengthScaling;
             }
 
             // Adjust the angle of the kick based on mouse movement
@@ -79,10 +80,10 @@ public class SoccerBallController : MonoBehaviour
             // Pass the results to the soccer ball
             m_soccerBall.OnSetInitialVelocity(direction.normalized * m_fKickStrength);
         }
-        else if (m_fKickStrength > 0.0f)
+        else if (m_fKickStrength > m_fMinStrength)
         {
             m_soccerBall.OnKick();
-            m_fKickStrength = 0.0f;
+            m_fKickStrength = m_fMinStrength;
         }
     }
 }
